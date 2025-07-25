@@ -334,7 +334,6 @@ async def select_book(message: types.Message, state: FSMContext):
         await state.set_state(UserStates.waiting_for_last_page)
 # Scheduled tasks
 async def daily_report():
-    db.clear_daily()
     users = db.get_all_users()
     report = "Daily Reading Report:\n\n"
     for user in users:
@@ -343,18 +342,21 @@ async def daily_report():
         pages_read = db.get_daily_reading(user[0])
         report += f"{user[1]} (@{user[2]}) - {'Read ' + str(pages_read) + ' pages' if pages_read else 'Did not read'}\n"
     await bot.send_message(GROUP_CHAT_ID, report)
+    db.clear_daily()
 
 async def weekly_report():
-    db.clear_weekly()
     top_reader = db.get_top_reader()
     if top_reader:
         await bot.send_message(GROUP_CHAT_ID, f"Congratulations to @{top_reader[2]} for reading the most pages this week!")
+    else:
+        await bot.send_message(GROUP_CHAT_ID, "No reading activity this week.")
+    db.clear_weekly()
 
 async def main():
     # Initialize scheduler
     scheduler = AsyncIOScheduler()
-    scheduler.add_job(daily_report, 'cron', hour=0, minute=0)
-    scheduler.add_job(weekly_report, 'cron', day_of_week='sat', hour=9, minute=0)
+    scheduler.add_job(daily_report, 'cron', hour=19, minute=0)
+    scheduler.add_job(weekly_report, 'cron', day_of_week='sat', hour=4, minute=0)
     scheduler.start()
     
     # Start polling
